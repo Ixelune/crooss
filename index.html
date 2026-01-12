@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Idle Wheel RPG</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: Arial;
+      text-align: center;
+    }
+    .box {
+      background: #222;
+      padding: 15px;
+      margin: 15px auto;
+      width: 320px;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚔️ Idle Wheel RPG</h1>
+
+<div class="box">
+  <p>💰 Money: $<span id="money">0</span></p>
+  <p>🔄 Spins: <span id="spins">0</span></p>
+  <p>⚔️ Damage: <span id="damage">1</span></p>
+</div>
+
+<div class="box">
+  <h3>🧟 Mob</h3>
+  <p>HP: <span id="mobHp">10</span> / <span id="mobMax">10</span></p>
+</div>
+
+<button onclick="spinWheel()">🎡 Spin Wheel (1 Spin)</button>
+
+<h3 id="log"></h3>
+
+<script>
+let money = 0;
+let spins = 0;
+let damage = 1;
+
+let mobMaxHp = 10;
+let mobHp = mobMaxHp;
+
+// Wheel rewards
+const wheel = [
+  { type: "money", value: 50 },
+  { type: "money", value: 100 },
+  { type: "damage", value: 1 },
+  { type: "damage", value: 2 },
+  { type: "money", value: 250 }
+];
+
+// Idle mob attack loop
+setInterval(() => {
+  mobHp -= damage;
+
+  if (mobHp <= 0) {
+    spins++;
+    mobMaxHp += 5; // mobs get stronger
+    mobHp = mobMaxHp;
+    log("🧟 Mob defeated! +1 Spin");
+  }
+
+  updateUI();
+}, 1000);
+
+// Spin wheel
+function spinWheel() {
+  if (spins <= 0) {
+    log("❌ No spins left!");
+    return;
+  }
+
+  spins--;
+  const prize = wheel[Math.floor(Math.random() * wheel.length)];
+
+  if (prize.type === "money") {
+    money += prize.value;
+    log(`💰 Won $${prize.value}`);
+  } else if (prize.type === "damage") {
+    damage += prize.value;
+    log(`⚔️ Damage +${prize.value}`);
+  }
+
+  updateUI();
+}
+
+function updateUI() {
+  document.getElementById("money").innerText = money;
+  document.getElementById("spins").innerText = spins;
+  document.getElementById("damage").innerText = damage;
+  document.getElementById("mobHp").innerText = mobHp;
+  document.getElementById("mobMax").innerText = mobMaxHp;
+}
+
+function log(text) {
+  document.getElementById("log").innerText = text;
+}
+</script>
+
+</body>
+</html>
