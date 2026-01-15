@@ -23,7 +23,7 @@
     </div>
 
     <div class="box">
-      <h3>❤️ Player HP</h3>
+      <h3>☠️ Player HP</h3>
       <div class="stat-row">
         <span><span id="playerHp">100</span> / <span id="playerMaxHp">100</span></span>
       </div>
@@ -68,14 +68,10 @@
   </div>
 
   <div class="box" style="width: 100%; max-width: none;">
-    <h3>🎡 Spin Options</h3>
+    <h3>🎡 Spin</h3>
     <div class="button-group" style="margin-top: 10px;">
-      <button onclick="spinAmount(1)">Spin ×1</button>
-      <button onclick="spinAmount(2)">Spin ×2</button>
-      <button onclick="spinAmount(5)">Spin ×5</button>
-      <button onclick="spinAmount(10)">Spin ×10</button>
-      <button onclick="spinAmount(100)">Spin ×100</button>
-      <button onclick="spinMax()">Spin MAX</button>
+      <button id="spinToggleBtn" onclick="toggleSpinMode()" style="width: 150px;">Mode: ×1</button>
+      <button onclick="spinWithMode()" style="flex: 1; min-width: 100px;">SPIN</button>
     </div>
   </div>
 

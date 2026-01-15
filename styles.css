@@ -87,10 +87,11 @@ button:disabled {
   background: #222;
   padding: 15px;
   margin: 15px auto;
-  width: 320px;
+  width: 100%;
+  max-width: 900px;
   border-radius: 8px;
   border: 1px solid #333;
-  max-height: 400px;
+  max-height: 600px;
   overflow-y: auto;
 }
 
@@ -98,33 +99,35 @@ button:disabled {
   margin-top: 0;
 }
 
-.inventory-item {
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.inventory-grid-item {
   background: #1a1a1a;
   padding: 10px;
-  margin: 8px 0;
   border-radius: 5px;
-  border-left: 3px solid #0066cc;
+  border: 2px solid #0066cc;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.inventory-item.legendary {
-  border-left-color: #ff8800;
-}
-
-.inventory-item.rare {
-  border-left-color: #8800ff;
-}
-
-.inventory-item-name {
+  flex-direction: column;
+  gap: 8px;
   text-align: left;
-  flex: 1;
+  font-size: 12px;
 }
 
-.inventory-item-count {
-  font-weight: bold;
-  margin-right: 10px;
+.inventory-grid-item.legendary {
+  border-color: #ff8800;
+}
+
+.inventory-grid-item.rare {
+  border-color: #8800ff;
+}
+
+.inventory-grid-item.mythic {
+  border-color: #ffff00;
 }
 
 .shop-item {

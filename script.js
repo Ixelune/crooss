@@ -72,7 +72,8 @@ let gameState = {
   maxInventorySlots: 80,
   shopOpen: false,
   currentMobVariant: null,
-  lastMobAttackTime: 0
+  lastMobAttackTime: 0,
+  spinMode: 1
 };
 
 // Wheel rewards with rarity percentages
@@ -103,15 +104,15 @@ const wheel = [
 
 // Shop items
 const shopItems = [
-  { id: "small_potion", name: "Small Health Potion", price: 50, effect: () => healPlayer(30) },
-  { id: "medium_potion", name: "Medium Health Potion", price: 150, effect: () => healPlayer(75) },
-  { id: "large_potion", name: "Large Health Potion", price: 400, effect: () => healPlayer(150) },
-  { id: "health_upgrade", name: "Health Upgrade (+25 Max HP)", price: 200, effect: () => upgradeMaxHealth(25) },
-  { id: "health_upgrade_2", name: "Health Upgrade (+50 Max HP)", price: 500, effect: () => upgradeMaxHealth(50) },
-  { id: "damage_upgrade", name: "Damage Multiplier (+10%)", price: 300, effect: () => upgradeDamage(1.10) },
-  { id: "damage_upgrade_2", name: "Damage Multiplier (+25%)", price: 1000, effect: () => upgradeDamage(1.25) },
-  { id: "inv_mult_1", name: "Inventory Slot +20", price: 100, effect: () => upgradeInventory(20) },
-  { id: "inv_mult_2", name: "Inventory Slot +50", price: 350, effect: () => upgradeInventory(50) }
+  { id: "small_potion", name: "Small Health Potion", price: 50, type: "potion", value: 30 },
+  { id: "medium_potion", name: "Medium Health Potion", price: 150, type: "potion", value: 75 },
+  { id: "large_potion", name: "Large Health Potion", price: 400, type: "potion", value: 150 },
+  { id: "health_upgrade", name: "Health Upgrade (+25 Max HP)", price: 200, type: "upgrade_health", value: 25 },
+  { id: "health_upgrade_2", name: "Health Upgrade (+50 Max HP)", price: 500, type: "upgrade_health", value: 50 },
+  { id: "damage_upgrade", name: "Damage Multiplier (+10%)", price: 300, type: "upgrade_damage", value: 1.10 },
+  { id: "damage_upgrade_2", name: "Damage Multiplier (+25%)", price: 1000, type: "upgrade_damage", value: 1.25 },
+  { id: "inv_mult_1", name: "Inventory Slot +20", price: 100, type: "upgrade_inventory", value: 20 },
+  { id: "inv_mult_2", name: "Inventory Slot +50", price: 350, type: "upgrade_inventory", value: 50 }
 ];
 
 function getRandomMobVariant() {
@@ -215,13 +216,26 @@ function spinWheel(amount = 1) {
   updateUI();
 }
 
-// Spin amount functions
-function spinAmount(amount) {
-  spinWheel(amount);
+// Spin toggle and mode functions
+const spinModes = [1, 2, 5, 10, 100];
+
+function toggleSpinMode() {
+  const currentIndex = spinModes.indexOf(gameState.spinMode);
+  const nextIndex = (currentIndex + 1) % (spinModes.length + 1);
+  
+  if (nextIndex === spinModes.length) {
+    gameState.spinMode = 'MAX';
+  } else {
+    gameState.spinMode = spinModes[nextIndex];
+  }
+  
+  const btnText = gameState.spinMode === 'MAX' ? 'Mode: MAX' : `Mode: ×${gameState.spinMode}`;
+  document.getElementById("spinToggleBtn").innerText = btnText;
 }
 
-function spinMax() {
-  spinWheel(gameState.spins);
+function spinWithMode() {
+  const amount = gameState.spinMode === 'MAX' ? gameState.spins : gameState.spinMode;
+  spinWheel(amount);
 }
 
 // Inventory management
@@ -307,7 +321,18 @@ function buyItem(itemId) {
   }
 
   gameState.money -= item.price;
-  item.effect();
+  
+  // Handle different item types
+  if (item.type === "potion") {
+    addToInventory(item.name, item.value, "potion");
+  } else if (item.type === "upgrade_health") {
+    upgradeMaxHealth(item.value);
+  } else if (item.type === "upgrade_damage") {
+    upgradeDamage(item.value);
+  } else if (item.type === "upgrade_inventory") {
+    upgradeInventory(item.value);
+  }
+  
   log(`✅ Bought ${item.name}`);
   updateUI();
   updateShopDisplay();
@@ -335,6 +360,11 @@ function equipItem(itemName) {
   const item = gameState.inventory[itemName];
   if (!item) return;
 
+  if (item.count <= 0) {
+    log("❌ You don't have this item!");
+    return;
+  }
+
   if (!item.stackable || item.type === "weapon") {
     log("❌ Cannot equip non-stackable items!");
     return;
@@ -343,6 +373,10 @@ function equipItem(itemName) {
   if (item.type === "damage_mult") {
     if (!gameState.equipment[itemName]) {
       gameState.equipment[itemName] = 0;
+    }
+    if (gameState.equipment[itemName] >= item.count) {
+      log("❌ You don't have enough of this item to equip!");
+      return;
     }
     gameState.equipment[itemName]++;
     gameState.equipedMultipliers.push(itemName);
@@ -364,6 +398,7 @@ function unequipItem(itemName) {
   }
   recalculateEquipedMultipliers();
   log(`🔓 Unequipped ${itemName}`);
+  updateUI();
 }
 
 function recalculateEquipedMultipliers() {
@@ -387,6 +422,10 @@ function useItem(itemName) {
       log(`❌ You already have full health!`);
       return;
     }
+    if (item.count <= 0) {
+      log(`❌ You don't have this item!`);
+      return;
+    }
     healPlayer(item.value);
     log(`🧪 Used ${itemName}. Restored ${item.value} HP!`);
     item.count--;
@@ -394,6 +433,10 @@ function useItem(itemName) {
       delete gameState.inventory[itemName];
     }
   } else if (item.type === "weapon") {
+    if (item.count <= 0) {
+      log(`❌ You don't have this weapon!`);
+      return;
+    }
     gameState.baseDamage += item.value;
     log(`⚔️ Equipped ${itemName}! Damage +${item.value}`);
     item.count--;
@@ -458,40 +501,46 @@ function updateInventoryDisplay() {
     return;
   }
 
+  const grid = document.createElement("div");
+  grid.className = "inventory-grid";
+
   items.forEach(item => {
     const div = document.createElement("div");
-    div.className = `inventory-item ${item.rarity}`;
+    div.className = `inventory-grid-item ${item.rarity}`;
     
     let actionButtons = "";
     if (item.type === "potion") {
-      actionButtons = `<button style="padding: 5px 10px; font-size: 12px;" onclick="useItem('${item.name}')">Use</button>`;
+      actionButtons = `<button style="padding: 4px 8px; font-size: 11px; width: 100%;" onclick="useItem('${item.name}')">Use</button>`;
     } else if (item.type === "weapon") {
-      actionButtons = `<button style="padding: 5px 10px; font-size: 12px;" onclick="useItem('${item.name}')">Equip</button>`;
+      actionButtons = `<button style="padding: 4px 8px; font-size: 11px; width: 100%;" onclick="useItem('${item.name}')">Equip</button>`;
     } else if (item.stackable) {
       const equipped = gameState.equipment[item.name] || 0;
       actionButtons = `
-        <button style="padding: 5px 10px; font-size: 12px;" onclick="equipItem('${item.name}')">E+</button>
-        <button style="padding: 5px 10px; font-size: 12px;" onclick="unequipItem('${item.name}')">E-</button>
-        <span style="color: #ffaa00; margin: 0 5px;">(${equipped} equipped)</span>
+        <button style="padding: 4px 8px; font-size: 11px; flex: 1;" onclick="equipItem('${item.name}')">E+</button>
+        <button style="padding: 4px 8px; font-size: 11px; flex: 1;" onclick="unequipItem('${item.name}')">E-</button>
+        <span style="color: #ffaa00; font-size: 10px; width: 100%; text-align: center;">${equipped}/${item.count}</span>
       `;
     }
 
-    actionButtons += `<button style="padding: 5px 10px; font-size: 12px; background: #aa0000;" onclick="trashItem('${item.name}')">🗑️</button>`;
+    let itemInfo = `<strong>${item.name}</strong>`;
+    if (item.type === "weapon") itemInfo += `<br/><span style="color: #ffaa00; font-size: 11px;">Dmg: ${item.value}</span>`;
+    if (item.type === "potion") itemInfo += `<br/><span style="color: #00ff00; font-size: 11px;">+${item.value} HP</span>`;
+    if (item.type === "damage_mult") itemInfo += `<br/><span style="color: #ff9900; font-size: 11px;">×${item.value.toFixed(2)}</span>`;
 
     div.innerHTML = `
-      <div class="inventory-item-name">
-        <strong>${item.name}</strong>
-        ${item.type === "weapon" ? `<br/><span style="color: #ffaa00;">Damage: ${item.value}</span>` : ""}
-        ${item.type === "potion" ? `<br/><span style="color: #00ff00;">Heal: ${item.value}</span>` : ""}
-        ${item.type === "damage_mult" ? `<br/><span style="color: #ff9900;">×${item.value.toFixed(2)}</span>` : ""}
+      <div style="flex: 1;">
+        ${itemInfo}
       </div>
-      <div style="display: flex; gap: 5px; align-items: center;">
-        <span class="inventory-item-count">×${item.count}</span>
+      <div style="display: flex; gap: 3px; align-items: center; font-weight: bold; margin: 5px 0; font-size: 12px;">×${item.count}</div>
+      <div style="display: flex; gap: 3px; flex-direction: column;">
         ${actionButtons}
+        <button style="padding: 4px 8px; font-size: 11px; background: #aa0000; width: 100%;" onclick="trashItem('${item.name}')">🗑️</button>
       </div>
     `;
-    inventoryDiv.appendChild(div);
+    grid.appendChild(div);
   });
+  
+  inventoryDiv.appendChild(grid);
 }
 
 function log(text) {
@@ -541,7 +590,8 @@ function resetGameProgress() {
     maxInventorySlots: 80,
     shopOpen: false,
     currentMobVariant: null,
-    lastMobAttackTime: 0
+    lastMobAttackTime: 0,
+    spinMode: 1
   };
   spawnNewMob();
   updateUI();
