@@ -71,7 +71,13 @@
     <h3>🎡 Spin</h3>
     <div class="button-group" style="margin-top: 10px;">
       <button id="spinToggleBtn" onclick="toggleSpinMode()" style="width: 150px;">Mode: ×1</button>
-      <button onclick="spinWithMode()" style="flex: 1; min-width: 100px;">SPIN</button>
+      <button id="spinButton" onclick="spinWithMode()" style="flex: 1; min-width: 100px;">SPIN</button>
+    </div>
+    <div class="slot-machine-wrapper">
+      <div class="slot-center-indicator">▼</div>
+      <div class="slot-reel-container">
+        <div class="slot-reel" id="slotReel"></div>
+      </div>
     </div>
   </div>
 

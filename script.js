@@ -73,7 +73,8 @@ let gameState = {
   shopOpen: false,
   currentMobVariant: null,
   lastMobAttackTime: 0,
-  spinMode: 1
+  spinMode: 1,
+  isSpinning: false
 };
 
 // Wheel rewards with rarity percentages
@@ -97,9 +98,9 @@ const wheel = [
   { type: "damage_mult", value: 1.10, name: "Damage +10%", rarity: 1.49 },
   
   // Legendary weapons
-  { type: "weapon", damage: 500, name: "Common Legendary Sword", rarity: 10, weaponRarity: "legendary" },
-  { type: "weapon", damage: 1000, name: "Rare Legendary Axe", rarity: 2.5, weaponRarity: "rare" },
-  { type: "weapon", damage: 2500000, name: "Mythic Godly Blade", rarity: 0.01, weaponRarity: "mythic" }
+  { type: "weapon", damage: 500, name: "Common Legendary Sword", rarity: 0.5, weaponRarity: "legendary" },
+  { type: "weapon", damage: 1000, name: "Rare Legendary Axe", rarity: 0.1, weaponRarity: "rare" },
+  { type: "weapon", damage: 2500000, name: "Mythic Godly Blade", rarity: 0.005, weaponRarity: "mythic" }
 ];
 
 // Shop items
@@ -235,7 +236,135 @@ function toggleSpinMode() {
 
 function spinWithMode() {
   const amount = gameState.spinMode === 'MAX' ? gameState.spins : gameState.spinMode;
-  spinWheel(amount);
+  const spinButton = document.getElementById('spinButton');
+  
+  if (gameState.isSpinning) {
+    return;
+  }
+  
+  if (gameState.spins < amount) {
+    log(`❌ Not enough spins! (Have: ${gameState.spins}, Need: ${amount})`);
+    return;
+  }
+  
+  gameState.isSpinning = true;
+  spinButton.disabled = true;
+  
+  // Pre-generate the rewards that will be displayed
+  const rewards = [];
+  for (let i = 0; i < amount; i++) {
+    const roll = Math.random() * 100;
+    let accumulated = 0;
+    let prize = null;
+
+    for (let item of wheel) {
+      accumulated += item.rarity;
+      if (roll <= accumulated) {
+        prize = item;
+        break;
+      }
+    }
+    if (!prize) prize = wheel[0];
+    rewards.push(prize);
+  }
+  
+  showSlotAnimation(amount, rewards, () => {
+    gameState.isSpinning = false;
+    spinButton.disabled = false;
+    spinWheel(amount);
+  });
+}
+
+// Slot machine animation
+function showSlotAnimation(amount, rewards, callback) {
+  const slotReel = document.getElementById('slotReel');
+  const symbols = ['MONEY', 'POTION', 'SWORD', 'HEALTH', 'BOOST', 'LUCKY'];
+  
+  // Map rewards to symbols
+  const rewardSymbols = rewards.map(reward => {
+    if (reward.type === "money") return 'MONEY';
+    if (reward.type === "health_potion") return 'POTION';
+    if (reward.type === "weapon") return 'SWORD';
+    if (reward.type === "health_mult") return 'HEALTH';
+    if (reward.type === "damage_mult") return 'BOOST';
+    return 'LUCKY';
+  });
+  
+  // Add padding symbols before rewards
+  const padding = 20;
+  for (let i = 0; i < padding; i++) {
+    const symbol = document.createElement('div');
+    symbol.className = 'slot-symbol';
+    symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    slotReel.appendChild(symbol);
+  }
+  
+  // Add the actual rewards
+  rewardSymbols.forEach(sym => {
+    const symbol = document.createElement('div');
+    symbol.className = 'slot-symbol';
+    symbol.textContent = sym;
+    slotReel.appendChild(symbol);
+  });
+  
+  // Add padding symbols after rewards
+  for (let i = 0; i < padding; i++) {
+    const symbol = document.createElement('div');
+    symbol.className = 'slot-symbol';
+    symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    slotReel.appendChild(symbol);
+  }
+  
+  // Calculate target: land on middle of reward symbols
+  const totalSymbolsBefore = padding;
+  const middleRewardIndex = Math.floor(rewardSymbols.length / 2);
+  const landOnSymbolIndex = totalSymbolsBefore + middleRewardIndex;
+  const targetTransform = -(landOnSymbolIndex * 80 + 40);
+  
+  const animationDuration = 2000 + amount * 150;
+  
+  slotReel.style.transition = `transform ${animationDuration / 1000}s cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+  slotReel.style.transform = `translateX(${targetTransform}px)`;
+  
+  setTimeout(() => {
+    slotReel.style.transition = `none`;
+    
+    // Get current position before cleanup
+    const currentTransform = slotReel.style.transform;
+    const currentScrollMatch = currentTransform.match(/-?\d+/);
+    const currentScroll = currentScrollMatch ? parseInt(currentScrollMatch[0]) : 0;
+    
+    // Remove old symbols from the beginning, keep the currently visible ones
+    const totalChildren = slotReel.children.length;
+    const toRemove = Math.max(0, totalChildren - 80); // Keep 80 symbols
+    
+    for (let i = 0; i < toRemove; i++) {
+      slotReel.removeChild(slotReel.firstChild);
+    }
+    
+    // Adjust transform to account for removed symbols
+    const removedPixels = toRemove * 80;
+    const newTransform = currentScroll + removedPixels;
+    
+    // Add new symbols to the end
+    for (let i = 0; i < toRemove; i++) {
+      const symbol = document.createElement('div');
+      symbol.className = 'slot-symbol';
+      symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      slotReel.appendChild(symbol);
+    }
+    
+    // Set position after cleanup to keep view consistent
+    slotReel.style.transform = `translateX(${newTransform}px)`;
+    
+    // Move back to center for next spin
+    setTimeout(() => {
+      slotReel.style.transition = `none`;
+      slotReel.style.transform = `translateX(-40px)`;
+    }, 100);
+    
+    callback();
+  }, animationDuration);
 }
 
 // Inventory management
@@ -297,7 +426,9 @@ function updateShopDisplay() {
   const shopItems_html = document.getElementById("shopItems");
   shopItems_html.innerHTML = "";
   
-  shopItems.forEach(item => {
+  const sortedItems = [...shopItems].sort((a, b) => a.price - b.price);
+  
+  sortedItems.forEach(item => {
     const div = document.createElement("div");
     div.className = "shop-item";
     div.innerHTML = `
@@ -591,7 +722,8 @@ function resetGameProgress() {
     shopOpen: false,
     currentMobVariant: null,
     lastMobAttackTime: 0,
-    spinMode: 1
+    spinMode: 1,
+    isSpinning: false
   };
   spawnNewMob();
   updateUI();
@@ -608,5 +740,19 @@ loadFromCookie();
 if (!gameState.currentMobVariant) {
   spawnNewMob();
 }
+
+// Initialize slot machine with symbols
+const slotReel = document.getElementById('slotReel');
+const symbols = ['MONEY', 'POTION', 'SWORD', 'HEALTH', 'BOOST', 'LUCKY'];
+
+// Generate 50 symbols for plenty of content
+for (let i = 0; i < 50; i++) {
+  const symbol = document.createElement('div');
+  symbol.className = 'slot-symbol';
+  symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+  slotReel.appendChild(symbol);
+}
+slotReel.style.transform = `translateX(-40px)`;
+
 updateUI();
 

@@ -194,3 +194,51 @@ button:disabled {
 .rarity-mythic {
   color: #ffff00;
 }
+
+.slot-machine-wrapper {
+  position: relative;
+  margin-top: 15px;
+}
+
+.slot-center-indicator {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  z-index: 10;
+  color: #ffaa00;
+}
+
+.slot-reel-container {
+  background: #111;
+  border: 2px solid #0066cc;
+  border-radius: 8px;
+  height: 80px;
+  overflow: hidden;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.slot-reel {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  transition: none;
+}
+
+.slot-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+  height: 100%;
+  user-select: none;
+  width: 80px;
+  border-right: 1px solid #333;
+  color: #ffaa00;
+}
