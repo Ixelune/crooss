@@ -2,110 +2,111 @@
 <html>
 <head>
   <title>Idle Wheel RPG</title>
-  <style>
-    body {
-      background: #111;
-      color: #eee;
-      font-family: Arial;
-      text-align: center;
-    }
-    .box {
-      background: #222;
-      padding: 15px;
-      margin: 15px auto;
-      width: 320px;
-      border-radius: 8px;
-    }
-    button {
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<h1>⚔️ Idle Wheel RPG</h1>
+<div class="container">
+  <h1>⚔️ Idle Wheel RPG</h1>
 
-<div class="box">
-  <p>💰 Money: $<span id="money">0</span></p>
-  <p>🔄 Spins: <span id="spins">0</span></p>
-  <p>⚔️ Damage: <span id="damage">1</span></p>
+  <div class="grid">
+    <div class="box">
+      <h3>💰 Resources</h3>
+      <div class="stat-row">
+        <span>Money:</span>
+        <strong>$<span id="money">0</span></strong>
+      </div>
+      <div class="stat-row">
+        <span>Spins:</span>
+        <strong><span id="spins">0</span></strong>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>❤️ Player HP</h3>
+      <div class="stat-row">
+        <span><span id="playerHp">100</span> / <span id="playerMaxHp">100</span></span>
+      </div>
+      <div class="hp-bar">
+        <div class="hp-bar-fill" id="playerHpBar" style="width: 100%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="box">
+      <h3>⚔️ Damage</h3>
+      <div class="stat-row">
+        <span>Base Damage:</span>
+        <strong><span id="baseDamage">1</span></strong>
+      </div>
+      <div class="stat-row">
+        <span>Multiplier:</span>
+        <strong>×<span id="damageMultiplier">1.00</span></strong>
+      </div>
+      <div class="stat-row">
+        <span>Total Damage:</span>
+        <strong><span id="totalDamage">1</span></strong>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>🧟 Mob</h3>
+      <div class="stat-row">
+        <span id="mobName">Normal</span>
+      </div>
+      <div class="stat-row">
+        <span id="mobLevel">Level 1</span>
+      </div>
+      <div class="stat-row">
+        <span><span id="mobHp">10</span> / <span id="mobMax">10</span></span>
+      </div>
+      <div class="hp-bar">
+        <div class="hp-bar-fill" id="mobHpBar" style="width: 100%; background: linear-gradient(90deg, #aa0000, #ff0000);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box" style="width: 100%; max-width: none;">
+    <h3>🎡 Spin Options</h3>
+    <div class="button-group" style="margin-top: 10px;">
+      <button onclick="spinAmount(1)">Spin ×1</button>
+      <button onclick="spinAmount(2)">Spin ×2</button>
+      <button onclick="spinAmount(5)">Spin ×5</button>
+      <button onclick="spinAmount(10)">Spin ×10</button>
+      <button onclick="spinAmount(100)">Spin ×100</button>
+      <button onclick="spinMax()">Spin MAX</button>
+    </div>
+  </div>
+
+  <h3 id="log"></h3>
+
+  <div class="box" style="width: 100%; max-width: none;">
+    <h3>🎒 Inventory Slots: <span id="invSlots">0/80</span></h3>
+  </div>
+
+  <div class="button-group">
+    <button onclick="toggleShop()">🛒 Shop</button>
+  </div>
+
+  <div class="inventory" id="inventory">
+    <h3>📦 Inventory</h3>
+    <p>Empty</p>
+  </div>
 </div>
 
-<div class="box">
-  <h3>🧟 Mob</h3>
-  <p>HP: <span id="mobHp">10</span> / <span id="mobMax">10</span></p>
+<!-- Shop Modal -->
+<div id="shopModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; overflow-y: auto;">
+  <div style="background: #222; margin: 50px auto; padding: 20px; max-width: 400px; border-radius: 8px; border: 1px solid #333;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2>🛒 Shop</h2>
+      <button onclick="toggleShop()" style="padding: 5px 10px; font-size: 14px;">Close</button>
+    </div>
+    <div id="shopItems"></div>
+  </div>
 </div>
 
-<button onclick="spinWheel()">🎡 Spin Wheel (1 Spin)</button>
-
-<h3 id="log"></h3>
-
-<script>
-let money = 0;
-let spins = 0;
-let damage = 1;
-
-let mobMaxHp = 10;
-let mobHp = mobMaxHp;
-
-// Wheel rewards
-const wheel = [
-  { type: "money", value: 50 },
-  { type: "money", value: 100 },
-  { type: "damage", value: 1 },
-  { type: "damage", value: 2 },
-  { type: "money", value: 250 }
-];
-
-// Idle mob attack loop
-setInterval(() => {
-  mobHp -= damage;
-
-  if (mobHp <= 0) {
-    spins++;
-    mobMaxHp += 5; // mobs get stronger
-    mobHp = mobMaxHp;
-    log("🧟 Mob defeated! +1 Spin");
-  }
-
-  updateUI();
-}, 1000);
-
-// Spin wheel
-function spinWheel() {
-  if (spins <= 0) {
-    log("❌ No spins left!");
-    return;
-  }
-
-  spins--;
-  const prize = wheel[Math.floor(Math.random() * wheel.length)];
-
-  if (prize.type === "money") {
-    money += prize.value;
-    log(`💰 Won $${prize.value}`);
-  } else if (prize.type === "damage") {
-    damage += prize.value;
-    log(`⚔️ Damage +${prize.value}`);
-  }
-
-  updateUI();
-}
-
-function updateUI() {
-  document.getElementById("money").innerText = money;
-  document.getElementById("spins").innerText = spins;
-  document.getElementById("damage").innerText = damage;
-  document.getElementById("mobHp").innerText = mobHp;
-  document.getElementById("mobMax").innerText = mobMaxHp;
-}
-
-function log(text) {
-  document.getElementById("log").innerText = text;
-}
-</script>
+<script src="script.js"></script>
 
 </body>
 </html>
