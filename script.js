@@ -675,7 +675,24 @@ function updateInventoryDisplay() {
 }
 
 function log(text) {
-  document.getElementById("log").innerText = text;
+  const logContainer = document.getElementById("logContainer");
+  
+  // Create new log entry
+  const entry = document.createElement("p");
+  entry.style.margin = "5px 0";
+  entry.textContent = text;
+  
+  // Add to top of log
+  if (logContainer.firstChild && logContainer.firstChild.textContent === "No events yet...") {
+    logContainer.removeChild(logContainer.firstChild);
+  }
+  
+  logContainer.insertBefore(entry, logContainer.firstChild);
+  
+  // Keep only last 10 entries
+  while (logContainer.children.length > 10) {
+    logContainer.removeChild(logContainer.lastChild);
+  }
 }
 
 // Cookie Management
