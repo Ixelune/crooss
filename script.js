@@ -237,6 +237,7 @@ function toggleSpinMode() {
 function spinWithMode() {
   const amount = gameState.spinMode === 'MAX' ? gameState.spins : gameState.spinMode;
   const spinButton = document.getElementById('spinButton');
+  const skipSpinButton = document.getElementById('skipSpinButton');
   
   if (gameState.isSpinning) {
     return;
@@ -249,6 +250,7 @@ function spinWithMode() {
   
   gameState.isSpinning = true;
   spinButton.disabled = true;
+  skipSpinButton.disabled = true;
   
   // Pre-generate the rewards that will be displayed
   const rewards = [];
@@ -271,8 +273,35 @@ function spinWithMode() {
   showSlotAnimation(amount, rewards, () => {
     gameState.isSpinning = false;
     spinButton.disabled = false;
+    skipSpinButton.disabled = false;
     spinWheel(amount);
   });
+}
+
+function skipSpin() {
+  const amount = gameState.spinMode === 'MAX' ? gameState.spins : gameState.spinMode;
+  const spinButton = document.getElementById('spinButton');
+  const skipSpinButton = document.getElementById('skipSpinButton');
+  
+  if (gameState.isSpinning) {
+    return;
+  }
+  
+  if (gameState.spins < amount) {
+    log(`❌ Not enough spins! (Have: ${gameState.spins}, Need: ${amount})`);
+    return;
+  }
+  
+  gameState.isSpinning = true;
+  spinButton.disabled = true;
+  skipSpinButton.disabled = true;
+  
+  // Spin without animation
+  spinWheel(amount);
+  
+  gameState.isSpinning = false;
+  spinButton.disabled = false;
+  skipSpinButton.disabled = false;
 }
 
 // Slot machine animation
